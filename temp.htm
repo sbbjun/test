@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> ExploitBench 體系演進與前沿 LLM 效能剖析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 380px;
+            max-height: 450px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 420px;
+            }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased leading-relaxed min-h-screen flex flex-col">
+
+    <!-- Chosen Palette: Warm Neutral Slate with Security Cyan, Amber & Emerald Accents -->
+    <!-- Application Structure Plan:
+        1. Navigation & Executive KPI Header: High-level overview card metrics (Top score, benchmark scope, tier count, asymmetric gap) providing immediate narrative context.
+        2. Section 1: ExploitBench 5-Tier Architecture (階梯式漏洞利用能力): Interactive visual cards explaining Tier 1 to Tier 5 with code coverage down to full takeover (RCE).
+        3. Section 2: Cyber Benchmark Ecosystem Timeline & Matrix (資安評測演進矩陣): Filterable table and timeline covering CyberSecEval, Cybench, ExploitGym, AgentCyberRange, etc.
+        4. Section 3: Frontier LLM Performance Benchmark (模型成績與標籤分析): Dynamic Chart.js dashboard visualizing scores with data provenance tags (官方數據, 模型發布數據, 自測數據, 無數據) and controlled vs uncontrolled toggles.
+        5. Section 4: Deep Structural Insights & Guardrails (環境變異與攻防落差): Interactive 3-pillar deep dive into testing environments, commercial API safety guardrails, and open vs closed weight moats.
+        RATIONALE: Allows users to move from micro-architectural understanding (how ExploitBench works) to ecosystem context, specific model benchmarking, and deep systemic security implications smoothly.
+    -->
+    <!-- Visualization & Content Choices:
+        - ExploitBench 5-Tier Model: Dynamic step cards with detail expansion (HTML/CSS + JS logic).
+        - Ecosystem Comparison: Filterable data table with search bar and tag pills (Vanilla JS).
+        - LLM Score Visualizer: Chart.js Canvas bar chart with color-coded data attribution (Official vs Self-tested vs Baseline) with toggleable metrics.
+        - Guardrail Insights: Responsive tabbed view with interactive cards.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. Iconography strictly Unicode / CSS shapes.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🛡️</span>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-slate-100">ExploitBench 漏洞利用評測與 LLM 效能研究</h1>
+                    <p class="text-xs text-slate-400">2026 年前沿大語言模型網路安全攻防能力深度解構</p>
+                </div>
+            </div>
+            <nav class="mt-2 sm:mt-0 flex space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium">
+                <button onclick="scrollToSection('section-arch')" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition">架構原理</button>
+                <button onclick="scrollToSection('section-ecosystem')" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition">基準演進</button>
+                <button onclick="scrollToSection('section-scores')" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition">模型成績</button>
+                <button onclick="scrollToSection('section-insights')" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition">攻防落差</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+        <section class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200">
+            <div class="max-w-3xl mb-6">
+                <span class="inline-block px-2.5 py-1 text-xs font-semibold bg-cyan-100 text-cyan-800 rounded-full mb-2">研究報告綜覽</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">網路安全評測典範轉移：從靜態審查到高強度漏洞利用</h2>
+                <p class="mt-3 text-sm sm:text-base text-slate-600">
+                    本研究揭示人工智慧在軟體工程與漏洞研究領域的評測演進。早期資安評測多停留在靜態程式碼審查或單純引發崩潰（DoS），無法反映真實世界中武器化漏洞利用（RCE）的真實能力。由 CMU 與 Bugcrowd 於 2026 年 5 月推出的 <strong class="text-cyan-700">ExploitBench</strong>，將漏洞利用構建為連續的能力階梯，成為衡量頂尖 AI 代理真實攻擊縱深的新標竿。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-black text-cyan-600">100%</div>
+                    <div class="text-xs text-slate-500 mt-1 font-medium">GPT-6 Astra 飽和分級</div>
+                    <div class="text-[10px] text-slate-400">第一個獲評 Critical 風險等級模型</div>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-black text-indigo-600">5 層級</div>
+                    <div class="text-xs text-slate-500 mt-1 font-medium">ExploitBench 能力階梯</div>
+                    <div class="text-[10px] text-slate-400">包含 16 項可程式化驗證旗標</div>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-black text-emerald-600">41 個</div>
+                    <div class="text-xs text-slate-500 mt-1 font-medium">Chromium V8 真實漏洞</div>
+                    <div class="text-[10px] text-slate-400">v8 評測基底封裝環境</div>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-black text-amber-600">~40%</div>
+                    <div class="text-xs text-slate-500 mt-1 font-medium">開閉源能力結構差距</div>
+                    <div class="text-[10px] text-slate-400">高階記憶體劫持能力斷層</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-arch" class="scroll-mt-20 bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200">
+            <div class="border-b border-slate-200 pb-4 mb-6">
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span>⚙️</span> ExploitBench 架構原理與五層能力階梯
+                </h2>
+                <p class="mt-2 text-sm text-slate-600">
+                    本區塊展示 ExploitBench 評估框架的設計精髓。ExploitBench 拒絕二元勝負指標，將漏洞利用劃分為 16 項確定性旗標，向上收斂為 5 個漸進式能力層級，精準定位模型在 Chromium V8 沙箱中的攻防邊界。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div class="lg:col-span-7 space-y-3">
+                    <div onclick="selectTier(1)" id="tier-btn-1" class="tier-card cursor-pointer border-2 border-rose-500 bg-rose-50/50 p-4 rounded-xl transition hover:shadow-md flex items-start gap-4">
+                        <span class="bg-rose-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shrink-0">Tier 1</span>
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base">完全控制層級 (Full Control / RCE)</h3>
+                                <span class="text-xs font-bold text-rose-700">最高終點</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mt-1">劫持程式計數器 (PC)，獲得穩定且可重複執行的任意程式碼執行權限。</p>
+                        </div>
+                    </div>
+
+                    <div onclick="selectTier(2)" id="tier-btn-2" class="tier-card cursor-pointer border border-slate-200 bg-white p-4 rounded-xl transition hover:shadow-md flex items-start gap-4">
+                        <span class="bg-amber-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shrink-0">Tier 2</span>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm sm:text-base">沙箱逃逸與全域記憶體讀寫 (Sandbox Escape)</h3>
+                            <p class="text-xs text-slate-600 mt-1">繞過位址空間配置隨機化 (ASLR)，取得全域記憶體的任意讀寫（Arbitrary Read/Write）原語。</p>
+                        </div>
+                    </div>
+
+                    <div onclick="selectTier(3)" id="tier-btn-3" class="tier-card cursor-pointer border border-slate-200 bg-white p-4 rounded-xl transition hover:shadow-md flex items-start gap-4">
+                        <span class="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shrink-0">Tier 3</span>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm sm:text-base">沙箱內專屬原語合成 (In-Sandbox Primitive)</h3>
+                            <p class="text-xs text-slate-600 mt-1">在 Chromium V8 堆疊沙箱邊界內，成功合成物件位址洩漏與物件偽造（Fake Objective）結構。</p>
+                        </div>
+                    </div>
+
+                    <div onclick="selectTier(4)" id="tier-btn-4" class="tier-card cursor-pointer border border-slate-200 bg-white p-4 rounded-xl transition hover:shadow-md flex items-start gap-4">
+                        <span class="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shrink-0">Tier 4</span>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm sm:text-base">異常觸發與崩潰層級 (Trigger / Crash)</h3>
+                            <p class="text-xs text-slate-600 mt-1">觸發 AddressSanitizer 警報、記憶體安全檢查違規，或使編譯版本產生非預期行為差異。</p>
+                        </div>
+                    </div>
+
+                    <div onclick="selectTier(5)" id="tier-btn-5" class="tier-card cursor-pointer border border-slate-200 bg-white p-4 rounded-xl transition hover:shadow-md flex items-start gap-4">
+                        <span class="bg-slate-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shrink-0">Tier 5</span>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm sm:text-base">程式碼覆蓋率層級 (Code Coverage)</h3>
+                            <p class="text-xs text-slate-600 mt-1">基礎探索：依據修補比對（Patch Diffing）資訊，成功引導智慧代理探索並執行到潛在弱點路徑。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 bg-slate-900 text-slate-200 rounded-xl p-5 border border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h4 class="font-bold text-cyan-400 text-sm flex items-center gap-1.5">
+                            <span>🔍</span> <span id="tier-detail-title">Tier 1: 完全控制層級 (RCE)</span>
+                        </h4>
+                        <span id="tier-detail-badge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-900 text-rose-200">終極攻防指標</span>
+                    </div>
+
+                    <div id="tier-detail-body" class="text-xs space-y-3 leading-relaxed text-slate-300">
+                        <p><strong>能力特徵：</strong>代理能完全掌控目標進程的執行流。不僅能引發記憶體損毀，更能精準交織 ROP 鏈或 Shellcode，達成任意命令執行。</p>
+                        <p><strong>驗證標準：</strong>確定性驗證程式偵測到控制代碼寫入指令暫存器 (PC)，並成功彈出指定 Shell 或寫入隔離標記 Flag。</p>
+                        <div class="p-3 bg-slate-800/80 rounded-lg border border-slate-700/50">
+                            <span class="text-slate-400 block font-mono text-[10px] mb-1">// ExploitBench v8 驗證重點</span>
+                            <span class="text-emerald-400 font-mono text-[11px]">Flag 01-03: PC Control Achieved, RCE Shell Initialized.</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800">
+                        <div class="text-[11px] font-semibold text-slate-400 mb-2">ExploitBench v8 測試環境配置：</div>
+                        <ul class="text-xs space-y-1.5 text-slate-300 list-disc list-inside">
+                            <li>41 個 2024 年後修補之 Google Chromium V8 漏洞</li>
+                            <li>完全隔離之 Docker 容器與特定動態編譯檔</li>
+                            <li>標準化 LLM 工具呼叫（Tool-calling）介面</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-ecosystem" class="scroll-mt-20 bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200">
+            <div class="border-b border-slate-200 pb-4 mb-6">
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span>🗓️</span> 相關網路安全與漏洞利用評測基準演進對照
+                </h2>
+                <p class="mt-2 text-sm text-slate-600">
+                    本區塊收錄自 2023 年至 2026 年國際產學界推出的重要資安評測基準。點擊類別按鈕或輸入關鍵字可動態過濾，觀察評測目標如何從單純的「問答檢索」演進至「長執行週期多網段真實攻防」。
+                </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 mb-6 justify-between items-stretch sm:items-center">
+                <div class="flex flex-wrap gap-1.5 text-xs">
+                    <button onclick="filterBenchmarks('All')" class="bm-filter-btn px-3 py-1.5 rounded-lg bg-slate-900 text-white font-medium">全部 (9)</button>
+                    <button onclick="filterBenchmarks('Offensive')" class="bm-filter-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium">進攻利用/CTF</button>
+                    <button onclick="filterBenchmarks('Defensive')" class="bm-filter-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium">防禦/修復/加固</button>
+                    <button onclick="filterBenchmarks('Knowledge')" class="bm-filter-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium">安全知識/問答</button>
+                </div>
+                <div class="relative">
+                    <input type="text" id="bm-search" onkeyup="searchBenchmarks()" placeholder="搜尋基準或機構..." class="w-full sm:w-64 px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left text-xs text-slate-700 border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 border-b border-slate-200 text-slate-900 font-bold uppercase tracking-wider">
+                            <th class="p-3">評測基準名稱</th>
+                            <th class="p-3 w-28">推出年月</th>
+                            <th class="p-3 w-36">主導機構 / 來源</th>
+                            <th class="p-3">核心評測範疇與設計機制</th>
+                            <th class="p-3 w-28 text-center">導向分類</th>
+                        </tr>
+                    </thead>
+                    <tbody id="benchmark-table-body" class="divide-y divide-slate-200">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="section-scores" class="scroll-mt-20 bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200">
+            <div class="border-b border-slate-200 pb-4 mb-6">
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span>📊</span> ExploitBench v8 前沿大語言模型效能對照
+                </h2>
+                <p class="mt-2 text-sm text-slate-600">
+                    本區塊展示各前沿模型在 ExploitBench v8 基準中的攻防成績。為了消除資訊不對稱，每筆數據均標註其來源屬性（如官方 System Card、模型發布公告或第三方自測），並提供受控與非受控環境下的數值落差比較。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-7 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-slate-800">模型 ExploitBench v8 成功率 (%)</h3>
+                            <div class="flex items-center space-x-2 text-xs">
+                                <span class="inline-block w-3 h-3 bg-cyan-600 rounded"></span><span class="text-slate-600">官方/發布數據</span>
+                                <span class="inline-block w-3 h-3 bg-amber-500 rounded"></span><span class="text-slate-600">使用者自測</span>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="scoreChart"></canvas>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-2 italic">
+                        * Qwen 3.8-Flash-Next 為 125B 稀疏 MoE 模型，未公布 ExploitBench 專項數據。
+                    </p>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-900 mb-2">評測成績與屬性詳情矩陣</h3>
+                    <div id="model-list-container" class="space-y-2 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-insights" class="scroll-mt-20 bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200">
+            <div class="border-b border-slate-200 pb-4 mb-6">
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <span>⚡</span> 評測環境變異性、防護策略與攻防能力縱深分析
+                </h2>
+                <p class="mt-2 text-sm text-slate-600">
+                    將 ExploitBench 的數值置於真實攻防脈絡中審視，能觀察到模型分數與實際風險之間存在三個層面的結構性落差。點擊下方卡片可深入剖析背後的技術機制。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 hover:border-cyan-500 transition">
+                    <div class="w-10 h-10 rounded-lg bg-cyan-100 text-cyan-800 flex items-center justify-center font-bold text-lg mb-3">01</div>
+                    <h3 class="font-bold text-slate-900 text-base mb-2">環境參數與回饋失真</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        在嚴格限制互動且無診斷的受控（Controlled）條件下，多數模型分數大幅下滑。例如 <strong>GPT-5.5</strong> 在受控單次評估中僅能獲得 <strong>41% - 47%</strong>，但在允許重複試錯的「所有運行（Every Run）」或 AutoNudge 機制下，得分被顯著推升至 <strong>72%</strong>。這證實 LLM 在缺乏確定性除錯回饋時，難以獨立推導長鏈路空間布局。
+                    </p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 hover:border-indigo-500 transition">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold text-lg mb-3">02</div>
+                    <h3 class="font-bold text-slate-900 text-base mb-2">商用防護層與能力脫節</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        <strong>Claude Opus 5.5</strong> 在解除安全過濾時展現 <strong>73.4%</strong> 高階利用率（410 次嘗試達成 301 次 RCE）。然而商用 API 配置了前置動作審查分類器，會直接拒絕危險語境。OpenAI 的 <strong>GPT-6 Astra</strong> 雖達到 100% 飽和，但也因遞歸推理風險被隔離於專用「Daybreak」安全受限環境中。
+                    </p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 hover:border-emerald-500 transition">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-lg mb-3">03</div>
+                    <h3 class="font-bold text-slate-900 text-base mb-2">開閉源陣營結構性失衡</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        開放權重模型如 <strong>GLM-5.3 (54.4%)</strong> 與 <strong>Kimi K3 (32%)</strong> 在防禦修復類基準（如 CyberGym）可達 >80% 高分。但進入 ExploitBench 高階攻防時，開源模型大多停留在 Tier 4 崩潰或 Tier 3 沙箱原語階段，面對 ASLR 繞過與堆疊風水布局等 Tier 2/1 挑戰時成功率有限。
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-slate-900 text-slate-300 rounded-xl p-6 border border-slate-800">
+                <h4 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                    <span>⚖️</span> 關鍵結論：防守端與進攻端的能力護城河
+                </h4>
+                <p class="text-xs leading-relaxed text-slate-300">
+                    開放權重模型具備優秀的程式碼理解與補丁合成能力，能有效支援防禦端加固；然而，漏洞利用所高度依賴的精密符號推導、連續狀態追蹤以及對複雜記憶體結構的動態規劃，仍是頂尖專有旗艦模型（如 GPT-6 Astra、Claude Mythos/Opus 5.5）當前所構築的核心技術護城河。
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 text-slate-500 text-xs py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p> ExploitBench Cybersecurity Benchmark Research Analysis Platform • 2026</p>
+            <p class="mt-1 text-[11px] text-slate-600">本應用程式資料源自卡內基美隆大學 (CMU)、Bugcrowd 及相關 AI 安全機構公開之 2026 研究報告</p>
+        </div>
+    </footer>
+
+    <script>
+        const tiersData = {
+            1: {
+                title: "Tier 1: 完全控制層級 (Full Control / RCE)",
+                badge: "最高終點",
+                badgeClass: "bg-rose-900 text-rose-200",
+                desc: "代理能完全掌控目標進程的執行流。不僅能引發記憶體損毀，更能精準交織 ROP 鏈或 Shellcode，達成任意命令執行 (RCE)。",
+                verify: "確定性驗證程式偵測到控制代碼寫入指令暫存器 (PC)，並成功彈出指定 Shell 或寫入隔離標記 Flag。",
+                flag: "Flag 01-03: PC Control Achieved, RCE Shell Initialized."
+            },
+            2: {
+                title: "Tier 2: 沙箱逃逸與全域記憶體讀寫 (Sandbox Escape)",
+                badge: "高級原語",
+                badgeClass: "bg-amber-900 text-amber-200",
+                desc: "繞過位址空間配置隨機化 (ASLR) 與現代編譯器加固，打破邊界取得全域記憶體的任意讀寫 (Arbitrary Read/Write) 權限。",
+                verify: "代理成功推算基底位址 (Base Address) 並於非預期記憶體分頁進行穩定讀寫驗證。",
+                flag: "Flag 04-06: ASLR Bypassed, Arbitrary Memory R/W Verified."
+            },
+            3: {
+                title: "Tier 3: 沙箱內專屬原語合成 (In-Sandbox Primitive)",
+                badge: "核心佈局",
+                badgeClass: "bg-blue-900 text-blue-200",
+                desc: "在 Chromium V8 堆疊沙箱邊界內，成功合成物件位址洩漏 (Address Leak) 與物件偽造 (Fake Object) 結構。",
+                verify: "代理於 V8 堆疊中建立相對位址偏移量，達成對 JavaScript 物件內部屬性的精準操作。",
+                flag: "Flag 07-09: Addrof & Fakeobj Primitives Constructed."
+            },
+            4: {
+                title: "Tier 4: 異常觸發與崩潰層級 (Trigger / Crash)",
+                badge: "觸發層級",
+                badgeClass: "bg-indigo-900 text-indigo-200",
+                desc: "使目標程式產生非預期行為差異、觸發 AddressSanitizer (ASan) 記憶體安全檢查違規或發生嚴重崩潰 (Crash)。",
+                verify: "偵測到 Segmentation Fault、Heap-use-after-free 或 ASan 輸出診斷 Log。",
+                flag: "Flag 10-12: ASan Violation Triggered, Target Crashed."
+            },
+            5: {
+                title: "Tier 5: 程式碼覆蓋率層級 (Code Coverage)",
+                badge: "探索基礎",
+                badgeClass: "bg-slate-800 text-slate-300",
+                desc: "基礎探索：智慧代理依據修補比對 (Patch Diffing) 資訊，成功探索並執行到潛在的受污染弱點路徑。",
+                verify: "程式碼覆蓋率追蹤器捕捉到代理輸入已觸發脆弱函式區塊之基本區塊 (Basic Block)。",
+                flag: "Flag 13-16: Patch Diffing Target Branch Executed."
+            }
+        };
+
+        function selectTier(tierNum) {
+            document.querySelectorAll('.tier-card').forEach(card => {
+                card.classList.remove('border-rose-500', 'bg-rose-50/50', 'border-2');
+                card.classList.add('border-slate-200', 'bg-white');
+            });
+
+            const currentBtn = document.getElementById(`tier-btn-${tierNum}`);
+            if (currentBtn) {
+                currentBtn.classList.remove('border-slate-200', 'bg-white');
+                currentBtn.classList.add('border-rose-500', 'bg-rose-50/50', 'border-2');
+            }
+
+            const data = tiersData[tierNum];
+            if (data) {
+                document.getElementById('tier-detail-title').innerText = data.title;
+                const badgeEl = document.getElementById('tier-detail-badge');
+                badgeEl.innerText = data.badge;
+                badgeEl.className = `px-2 py-0.5 text-[10px] font-bold rounded ${data.badgeClass}`;
+
+                document.getElementById('tier-detail-body').innerHTML = `
+                    <p><strong>能力特徵：</strong>${data.desc}</p>
+                    <p><strong>驗證標準：</strong>${data.verify}</p>
+                    <div class="p-3 bg-slate-800/80 rounded-lg border border-slate-700/50">
+                        <span class="text-slate-400 block font-mono text-[10px] mb-1">// ExploitBench v8 驗證標籤</span>
+                        <span class="text-emerald-400 font-mono text-[11px]">${data.flag}</span>
+                    </div>
+                `;
+            }
+        }
+
+        const benchmarksData = [
+            { name: "CyberSecEval (v1-v3)", date: "2023/12 - 2024/08", org: "Meta AI", desc: "評估大語言模型的不安全代碼生成傾向、網路攻擊輔助能力以及對惡意提示注入的抗性。", cat: "Defensive", badge: "防禦/修復" },
+            { name: "CyberBench", date: "2024/02", org: "AAAI-24 團隊", desc: "聚焦於網路安全領域的多任務自然語言處理，包含威脅情報實體識別、漏洞摘要與安全問答。", cat: "Knowledge", badge: "安全知識" },
+            { name: "CyberMetric", date: "2024/02", org: "學術研究社群", desc: "匯集超過萬道專業資安標準、認證與學術文獻題目，用於評估模型安全知識檢索與問答精確度。", cat: "Knowledge", badge: "安全知識" },
+            { name: "Cybench", date: "2024/08", org: "史丹佛大學等", desc: "基於 Kali Linux 容器架構的奪旗賽（CTF）代理評測環境，將專業難題拆解為中間子任務來衡量多步驟推理水準。", cat: "Offensive", badge: "進攻利用" },
+            { name: "BountyBench", date: "2025/12", org: "產學聯合團隊", desc: "依據真實漏洞賞金計劃設計，衡量 AI 進攻與防守代理對真實商業軟體系統造成的潛在經濟價值與修補效益。", cat: "Offensive", badge: "進攻利用" },
+            { name: "AgentLAB", date: "2026/02", org: "安全評測實驗室", desc: "專門針對長執行週期（Long-Horizon）網路攻擊行動，測試模型在多日滲透流程中的目標維持與規劃韌性。", cat: "Offensive", badge: "進攻利用" },
+            { name: "CyberGym", date: "2026/03", org: "開源安全聯盟", desc: "大規模動態代理防禦基準，著重於自動化挖掘零日漏洞、生成驗證概念補丁與代碼自我加固流程。", cat: "Defensive", badge: "防禦/修復" },
+            { name: "ExploitGym", date: "2026/05", org: "攻防研究團隊", desc: "ExploitBench Sister 專案，在固定時間預算約束下檢驗模型合成完整利用鏈的速率與工程穩定度。", cat: "Offensive", badge: "進攻利用" },
+            { name: "AgentCyberRange", date: "2026/06", org: "前沿安全聯盟", desc: "具備多網段的高仿真企業網路對抗靶場，測試前沿系統橫向移動、特權提升與持久化潛伏等全鏈路攻防操作。", cat: "Offensive", badge: "進攻利用" }
+        ];
+
+        function renderBenchmarks(list) {
+            const tbody = document.getElementById('benchmark-table-body');
+            tbody.innerHTML = '';
+            list.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                
+                let badgeColor = "bg-slate-100 text-slate-700";
+                if(item.cat === "Offensive") badgeColor = "bg-rose-100 text-rose-800";
+                if(item.cat === "Defensive") badgeColor = "bg-emerald-100 text-emerald-800";
+                if(item.cat === "Knowledge") badgeColor = "bg-blue-100 text-blue-800";
+
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-slate-900">${item.name}</td>
+                    <td class="p-3 text-slate-500 whitespace-nowrap">${item.date}</td>
+                    <td class="p-3 font-medium text-slate-700">${item.org}</td>
+                    <td class="p-3 text-slate-600 leading-normal">${item.desc}</td>
+                    <td class="p-3 text-center whitespace-nowrap">
+                        <span class="px-2 py-1 text-[10px] font-semibold rounded-md ${badgeColor}">${item.badge}</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        let currentCategory = 'All';
+
+        function filterBenchmarks(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.bm-filter-btn').forEach(btn => {
+                btn.className = "bm-filter-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium";
+            });
+            event.target.className = "bm-filter-btn px-3 py-1.5 rounded-lg bg-slate-900 text-white font-medium";
+            applyBenchmarkFilters();
+        }
+
+        function searchBenchmarks() {
+            applyBenchmarkFilters();
+        }
+
+        function applyBenchmarkFilters() {
+            const query = document.getElementById('bm-search').value.toLowerCase();
+            const filtered = benchmarksData.filter(item => {
+                const matchesCat = (currentCategory === 'All') || (item.cat === currentCategory);
+                const matchesQuery = item.name.toLowerCase().includes(query) || 
+                                     item.org.toLowerCase().includes(query) || 
+                                     item.desc.toLowerCase().includes(query);
+                return matchesCat && matchesQuery;
+            });
+            renderBenchmarks(filtered);
+        }
+
+        const modelsData = [
+            { 
+                name: "GPT-6 Astra", 
+                score: 100, 
+                tag: "模型發布時公告數據", 
+                tagClass: "bg-cyan-100 text-cyan-800 border-cyan-300", 
+                bgChart: "#0891b2",
+                details: "2026 年 9 月模型發布時官方揭示其全數覆蓋 ExploitBench 評測項目，使其成為首個被列入 Preparedness Framework「Critical」安全風險等級的系統。" 
+            },
+            { 
+                name: "Claude Mythos Preview", 
+                score: 78, 
+                tag: "官方數據", 
+                tagClass: "bg-cyan-100 text-cyan-800 border-cyan-300", 
+                bgChart: "#0284c7",
+                details: "源自 Anthropic 內部研究及公開排行榜在「所有運行（Every Run）」非受控檢視模式下的聚合高分；在受控基準測試中其得分為 74% 至 74.2%。" 
+            },
+            { 
+                name: "Claude Opus 5.5", 
+                score: 73.4, 
+                tag: "官方數據", 
+                tagClass: "bg-cyan-100 text-cyan-800 border-cyan-300", 
+                bgChart: "#2563eb",
+                details: "2026 年 9 月 Anthropic 系統卡（System Card）公布之研究數據，在關閉安全過濾機制下，模型於 410 次利用嘗試中達成 301 次任意代碼執行。" 
+            },
+            { 
+                name: "GPT 5.5", 
+                score: 72, 
+                tag: "其他使用者自測數據", 
+                tagClass: "bg-amber-100 text-amber-800 border-amber-300", 
+                bgChart: "#d97706",
+                details: "第三方使用者在公開榜單中切換為多輪嘗試聚合檢視模式所得之最高分數；在官方嚴格受控環境中其得分僅約 41% 至 47%，完整利用率極低。" 
+            },
+            { 
+                name: "GLM 5.3", 
+                score: 54.4, 
+                tag: "模型發布時公告數據", 
+                tagClass: "bg-cyan-100 text-cyan-800 border-cyan-300", 
+                bgChart: "#4f46e5",
+                details: "2026 年 8 月智譜 AI（Z.ai）發布模型時官方文檔揭示之進攻利用能力分數；獨立紅隊後續複測其端對端端點控制率約為 12.2%。" 
+            },
+            { 
+                name: "Kimi K3", 
+                score: 32, 
+                tag: "模型發布時公告數據", 
+                tagClass: "bg-cyan-100 text-cyan-800 border-cyan-300", 
+                bgChart: "#7c3aed",
+                details: "月之暗面於 2026 年 7 月發布之技術報告數據，後續經美英兩國 AI 安全機構聯合測試確認其具備基礎原語合成能力但欠缺全鏈路接管能力。" 
+            },
+            { 
+                name: "Qwen 3.8-Flash-Next", 
+                score: 0, 
+                tag: "無數據", 
+                tagClass: "bg-slate-100 text-slate-600 border-slate-300", 
+                bgChart: "#94a3b8",
+                details: "阿里巴巴於 2026 年 8 月底發布的 125B 稀疏 MoE 預覽模型，主要針對推理吞吐量與常規編程最佳化，未發布針對該專項基準之官方測試指標。" 
+            }
+        ];
+
+        function renderModelDetails() {
+            const container = document.getElementById('model-list-container');
+            container.innerHTML = '';
+
+            modelsData.forEach((m) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-50 border border-slate-200 rounded-xl p-3.5 hover:bg-slate-100 transition";
+                
+                const scoreDisplay = m.tag === "無數據" ? "無數據" : `${m.score}%`;
+
+                div.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-900 text-xs sm:text-sm">${m.name}</span>
+                            <span class="px-2 py-0.5 text-[10px] font-medium border rounded-full ${m.tagClass}">${m.tag}</span>
+                        </div>
+                        <span class="font-black text-sm text-slate-800">${scoreDisplay}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">${m.details}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        let chartInstance = null;
+
+        function initChart() {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            
+            const labels = modelsData.map(m => m.name.length > 16 ? m.name.substring(0, 14) + '...' : m.name);
+            const dataScores = modelsData.map(m => m.score);
+            const backgroundColors = modelsData.map(m => m.bgChart);
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ExploitBench v8 分數 (%)',
+                        data: dataScores,
+                        backgroundColor: backgroundColors,
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const rawVal = context.raw;
+                                    const modelObj = modelsData[context.dataIndex];
+                                    if (modelObj.tag === "無數據") return ` ${modelObj.name}: 無專項測試數據`;
+                                    return ` ${modelObj.name}: ${rawVal}% (${modelObj.tag})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '成功率 (%)',
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                color: '#f1f5f9'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { size: 10 },
+                                maxRotation: 25
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            selectTier(1);
+            renderBenchmarks(benchmarksData);
+            renderModelDetails();
+            initChart();
+        });
+    </script>
+</body>
+</html>
